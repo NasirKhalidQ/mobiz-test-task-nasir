@@ -82,11 +82,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="yourname@gmail.com"
-                        {...field}
-                        type="text"
-                      />
+                      <Input placeholder="username" {...field} type="text" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
