@@ -25,11 +25,11 @@ export type SetJWTAction = {
 
 export type SetUser = {
   type: REDUCER_ACTION_TYPE.SET_USER;
-  payload: User;
+  payload: Partial<User>;
 };
 
 export type ReducerState = {
-  user?: User;
+  user?: Partial<User>;
   jwt: JWT;
 };
 
