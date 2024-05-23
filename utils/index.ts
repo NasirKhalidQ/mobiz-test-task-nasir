@@ -6,41 +6,29 @@ import { setCookie } from "cookies-next";
 
 export function handleSessionError(
   error: AxiosError | any,
-  router: AppRouterInstance
+  router: AppRouterInstance,
+  toast: any
 ): void {
   if (error?.response?.status === 401) {
-    console.error(error.response?.data?.detail || "Something went wrong");
+    toast({
+      title: "Session Expired",
+      description: "Please login again",
+      duration: 2000,
+    });
     deleteCookie("auth");
     router.push("/login");
   } else {
-    console.error(error?.response?.data?.detail || "Something went wrong");
+    toast({
+      title: "Error",
+      description: error?.response?.data?.message || "Something went wrong",
+      duration: 2000,
+    });
   }
 }
 
-export function handleSuccess(description: string): void {}
-
-export const saveBearer = (bearer: string, name: string) => {
+export const saveBearer = (bearer: string, name: string, image: string) => {
   setCookie("auth", bearer);
   setCookie("name", name);
+  setCookie("image", image);
   axiosInstance.defaults.headers.common["Authorization"] = "Bearer " + bearer;
-};
-
-export const parseJwt = (token: string) => {
-  var base64Url = token.split(".")[1];
-  var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  var jsonPayload = decodeURIComponent(
-    window
-      .atob(base64)
-      .split("")
-      .map(function (c) {
-        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join("")
-  );
-
-  return JSON.parse(jsonPayload);
-};
-
-export const parseJwtServer = (token: string) => {
-  return JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
 };

@@ -18,11 +18,12 @@ import { useState } from "react";
 import { ButtonLoading } from "@/components/ui/buttonLoading";
 import { axiosInstance } from "@/axios";
 import { APIEndpoints } from "@/apiEndpoints";
-import { handleSessionError, handleSuccess } from "@/utils";
+import { handleSessionError } from "@/utils";
 import { useAppContext } from "@/context";
 import { REDUCER_ACTION_TYPE } from "@/types";
-import { parseJwt, saveBearer } from "@/utils";
+import { saveBearer } from "@/utils";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 
 const FormSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -33,6 +34,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { dispatch } = useAppContext();
   const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -49,15 +51,20 @@ export default function Login() {
         username: data.username,
         password: data.password,
       });
-      dispatch?.({
-        type: REDUCER_ACTION_TYPE.SET_JWT,
-        payload: { ...parseJwt(res.data?.access_token), name: res.data?.name },
+      toast({
+        title: "Success",
+        description: "Login Successful",
+        duration: 2000,
       });
-      saveBearer(res.data?.access_token, res.data?.name);
-      handleSuccess(res?.data?.detail);
-      router.push("/");
+      const name = res.data?.firstName + " " + res.data?.lastName;
+      dispatch?.({
+        type: REDUCER_ACTION_TYPE.SET_USER,
+        payload: { name, email: res.data?.email, image: res.data?.image },
+      });
+      saveBearer(res.data?.token, name, res.data?.image);
+      router.push("/products");
     } catch (error) {
-      handleSessionError(error, router);
+      handleSessionError(error, router, toast);
     } finally {
       setLoading(false);
     }
