@@ -5,8 +5,6 @@ export const reducer = (
   action: ReducerAction
 ): ReducerState => {
   switch (action.type) {
-    case REDUCER_ACTION_TYPE.SET_JWT:
-      return { ...state, jwt: action.payload };
     case REDUCER_ACTION_TYPE.SET_USER:
       return { ...state, user: action.payload };
     default:
@@ -15,5 +13,5 @@ export const reducer = (
 };
 
 export const initialReducerValues: ReducerState = {
-  jwt: { expiry: 0, role: "user", user_id: "", name: "" },
+  user: { name: "" },
 };
