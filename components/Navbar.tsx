@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppContext } from "@/context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 export const Navbar = () => {
+  const { state } = useAppContext();
   const router = useRouter();
   const logout = () => {
     deleteCookie("auth");
@@ -58,19 +60,27 @@ export const Navbar = () => {
           ))}
         </ul>
       </div>
-      <div className="flex gap-4 items-center">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="cursor-pointer" asChild>
-            <Image src="/icons/avatar.svg" alt="user" width={48} height={48} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-24 -ml-20">
-            <DropdownMenuItem className="justify-around" onClick={logout}>
-              <LogOut className="w-5" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {state?.user?.name?.length ? (
+        <div className="flex gap-4 items-center">
+          <span className="text-slate-100">Welcome, {state?.user?.name}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="cursor-pointer" asChild>
+              <Image
+                src={state?.user?.image || ""}
+                alt="user"
+                width={48}
+                height={48}
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-24 -ml-20">
+              <DropdownMenuItem className="justify-around" onClick={logout}>
+                <LogOut className="w-5" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
     </nav>
   );
 };

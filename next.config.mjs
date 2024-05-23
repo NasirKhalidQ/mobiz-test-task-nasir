@@ -9,6 +9,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "mobizinc.com",
       },
+      {
+        protocol: "https",
+        hostname: "dummyjson.com",
+      },
     ],
   },
 };
