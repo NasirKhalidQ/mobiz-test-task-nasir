@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import {
+  useQuery,
+  QueryClient,
+  QueryClientProvider,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { APIEndpoints } from "@/apiEndpoints";
 import { axiosInstance } from "@/axios";
@@ -32,16 +39,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDebounce } from "@uidotdev/usehooks";
 
-export default function Products() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 60000 } },
+});
+export default function App() {
+  return (
+    // Provide the client to your App
+    <QueryClientProvider client={queryClient}>
+      <Products />
+      <ReactQueryDevtools />
+    </QueryClientProvider>
+  );
+}
+
+export function Products() {
   const [selectedCategory, setSelectedCategory] = useState<string>("none");
   const [query, setQuery] = useState("");
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const debouncedQuery = useDebounce(query, 300);
   const rowsPerPage = 20;
-  const [skip, setSkip] = useState(0);
+  const [page, setPage] = useState(0);
   const headers = [
     "",
     "title",
@@ -52,12 +70,7 @@ export default function Products() {
     "stock",
   ];
 
-  const fetchProducts = async (
-    next: boolean,
-    skipExists?: boolean,
-    category: string = "none",
-    q: string = ""
-  ) => {
+  const fetchProducts = async (category: string = "none", q: string = "") => {
     let url = APIEndpoints.GET_PRODUCTS;
     if (category.length && category !== "none") {
       url = `${APIEndpoints.GET_PRODUCTS}/category/${category}`;
@@ -65,30 +78,33 @@ export default function Products() {
     if (q.length && category === "none") {
       url = `${APIEndpoints.GET_PRODUCTS}/search`;
     }
-    setLoading(true);
-    const skipRecords = next ? skip + rowsPerPage : skip - rowsPerPage;
-    const sk = skipExists ? skipRecords : undefined;
     try {
       const response = await axiosInstance({
         method: "get",
         url,
         params: {
-          skip: sk,
+          skip: page * rowsPerPage,
           limit: rowsPerPage,
           q,
         },
       });
-      setProducts(response.data.products);
-      setCount(response.data.total);
-
-      if (!skipExists) return;
-      setSkip(next ? skip + rowsPerPage : skip - rowsPerPage);
+      return response.data;
     } catch (error) {
       // toast.error("There has been a problem with your fetch operation:");
-    } finally {
-      setLoading(false);
     }
   };
+
+  const productsQuery = useQuery({
+    queryKey: ["products", page, selectedCategory, debouncedQuery],
+    queryFn: () => fetchProducts(selectedCategory, debouncedQuery),
+    placeholderData: keepPreviousData,
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", null],
+    queryFn: () => fetchCategories(),
+    placeholderData: keepPreviousData,
+  });
 
   const fetchCategories = async () => {
     try {
@@ -96,27 +112,20 @@ export default function Products() {
         method: "get",
         url: APIEndpoints.GET_CATEGORIES,
       });
-      setCategories(response.data);
+      return response.data;
     } catch (error) {
       // toast.error("There has been a problem with your fetch operation:");
-    } finally {
-      setLoading(false);
     }
   };
-  useEffect(() => {
-    fetchCategories();
-    fetchProducts(true, false);
-  }, []);
 
   const selectCategory = (value: string) => {
     setSelectedCategory(value);
-    fetchProducts(false, false, value);
+    setQuery("");
   };
 
   const searchProducts = (value: string) => {
     setSelectedCategory("none");
     setQuery(value);
-    fetchProducts(false, false, "none", value);
   };
 
   return (
@@ -137,28 +146,28 @@ export default function Products() {
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="none">None</SelectItem>
-                  {categories.map((category, index) => (
-                    <SelectItem key={index} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
+                  {categoriesQuery.data?.map(
+                    (category: string, index: number) => (
+                      <SelectItem key={index} value={category}>
+                        {category}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
           <ScrollArea className="h-[68vh] rounded-md border p-4 mt-6">
-            {loading ? (
+            {productsQuery.isLoading ? (
               <div className="flex items-center justify-center h-[70vh] gap-2">
                 <Loader2 className="animate-spin h-8 w-8" />
                 Loading
               </div>
             ) : (
               <Table>
-                {count ? (
-                  <TableCaption className="text-right">
-                    Total Products: {count}
-                  </TableCaption>
-                ) : null}
+                <TableCaption className="text-right">
+                  Total Products: {productsQuery.data?.total}
+                </TableCaption>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     {headers.map((header, index) => (
@@ -169,26 +178,28 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products?.map((row, index) => (
-                    <>
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Avatar>
-                            <AvatarImage src={row.thumbnail} />
-                            <AvatarFallback>P</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>{row.title}</TableCell>
-                        <TableCell>{row.description}</TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          $ {row.price}
-                        </TableCell>
-                        <TableCell>{row.category}</TableCell>
-                        <TableCell>{row.brand}</TableCell>
-                        <TableCell>{row.stock}</TableCell>
-                      </TableRow>
-                    </>
-                  ))}
+                  {productsQuery.data?.products?.map(
+                    (row: any, index: number) => (
+                      <>
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Avatar>
+                              <AvatarImage src={row.thumbnail} />
+                              <AvatarFallback>P</AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+                          <TableCell>{row.title}</TableCell>
+                          <TableCell>{row.description}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            $ {row.price}
+                          </TableCell>
+                          <TableCell>{row.category}</TableCell>
+                          <TableCell>{row.brand}</TableCell>
+                          <TableCell>{row.stock}</TableCell>
+                        </TableRow>
+                      </>
+                    )
+                  )}
                 </TableBody>
               </Table>
             )}
@@ -197,9 +208,9 @@ export default function Products() {
           <Pagination className="mt-4">
             <PaginationContent>
               <PaginationItem
-                onClick={() => fetchProducts(false, true, selectedCategory)}
+                onClick={() => setPage(page - 1)}
                 className={`${
-                  skip === 0
+                  page === 0
                     ? "pointer-events-none opacity-50"
                     : "cursor-pointer"
                 } `}
@@ -207,9 +218,9 @@ export default function Products() {
                 <PaginationPrevious />
               </PaginationItem>
               <PaginationItem
-                onClick={() => fetchProducts(true, true, selectedCategory)}
+                onClick={() => setPage(page + 1)}
                 className={`${
-                  skip + rowsPerPage >= count
+                  (page + 1) * rowsPerPage >= productsQuery.data?.total
                     ? "pointer-events-none opacity-50"
                     : "cursor-pointer"
                 } `}
