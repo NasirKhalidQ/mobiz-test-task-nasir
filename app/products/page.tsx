@@ -85,7 +85,7 @@ export function Products() {
         params: {
           skip: page * rowsPerPage,
           limit: rowsPerPage,
-          q,
+          q: q.length ? q : undefined,
         },
       });
       return response.data;
