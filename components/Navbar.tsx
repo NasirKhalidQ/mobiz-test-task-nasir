@@ -38,7 +38,7 @@ export const Navbar = () => {
   return (
     <nav className="px-16 py-5 bg-[#1C2536] flex justify-between">
       <div className="flex gap-16 items-center ">
-        <div className="flex gap-3 items-center">
+        <div className="lg:flex gap-3 items-center hidden">
           <Image
             src="https://mobizinc.com/wp-content/uploads/2022/06/logo-xl.png"
             width={38}
@@ -47,7 +47,7 @@ export const Navbar = () => {
           />
           <h1 className="text-3xl text-white">Test Task</h1>
         </div>
-        <ul className="flex gap-3">
+        <ul className="flex gap-3 flex-col md:flex-row">
           {items.map((item) => (
             <li className="flex" key={item.link}>
               <Link
@@ -64,7 +64,9 @@ export const Navbar = () => {
       </div>
       {state?.user?.name?.length ? (
         <div className="flex gap-4 items-center">
-          <span className="text-slate-100">Welcome, {state?.user?.name}</span>
+          <span className="text-slate-100 hidden lg:flex">
+            Welcome, {state?.user?.name}
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger className="cursor-pointer" asChild>
               <Image
