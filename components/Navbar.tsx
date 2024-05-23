@@ -18,6 +18,8 @@ export const Navbar = () => {
   const router = useRouter();
   const logout = () => {
     deleteCookie("auth");
+    deleteCookie("name");
+    deleteCookie("image");
     router.push("/login");
   };
   const pathname = usePathname();
