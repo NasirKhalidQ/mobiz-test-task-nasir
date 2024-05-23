@@ -54,7 +54,7 @@ export default function App() {
   );
 }
 
-export function Products() {
+function Products() {
   const [selectedCategory, setSelectedCategory] = useState<string>("none");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
