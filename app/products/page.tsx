@@ -29,7 +29,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -37,6 +36,7 @@ import {
 export default function Products() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("none");
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const rowsPerPage = 20;
@@ -51,13 +51,22 @@ export default function Products() {
     "stock",
   ];
 
-  const fetchProducts = async (next: boolean, skipExists?: boolean) => {
+  const fetchProducts = async (
+    next: boolean,
+    skipExists?: boolean,
+    category: string = "none"
+  ) => {
+    let url = APIEndpoints.GET_PRODUCTS;
+    if (category.length && category !== "none") {
+      url = `${APIEndpoints.GET_PRODUCTS}/category/${category}`;
+    }
+    setLoading(true);
     const skipRecords = next ? skip + rowsPerPage : skip - rowsPerPage;
     const sk = skipExists ? skipRecords : undefined;
     try {
       const response = await axiosInstance({
         method: "get",
-        url: APIEndpoints.GET_PRODUCTS,
+        url,
         params: {
           skip: sk,
           limit: rowsPerPage,
@@ -74,6 +83,7 @@ export default function Products() {
       setLoading(false);
     }
   };
+
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance({
@@ -92,107 +102,107 @@ export default function Products() {
     fetchProducts(true, false);
   }, []);
 
+  const selectCategory = (value: string) => {
+    setSelectedCategory(value);
+    fetchProducts(false, false, value);
+  };
+
   return (
     <div>
       <Navbar />
       <div className="p-6 bg-white rounded-3xl min-h-[722px] mt-4">
-        {count ? (
-          <>
+        <div className="rounded-xl mt-4 mx-10">
+          <div className="flex gap-4">
+            <Input placeholder="Search here..." className="h-10" />
+            <Select onValueChange={(value) => selectCategory(value)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select a Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories.map((category, index) => (
+                    <SelectItem key={index} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <ScrollArea className="h-[70vh] rounded-md border p-4 mt-6">
             {loading ? (
-              <div className="flex items-center justify-center h-[400px] gap-2">
+              <div className="flex items-center justify-center h-[70vh] gap-2">
                 <Loader2 className="animate-spin h-8 w-8" />
                 Loading
               </div>
             ) : (
-              <>
-                <div className="rounded-xl mt-4 mx-10">
-                  <div className="flex gap-4">
-                    <Input className="h-10" />
-                    <Select defaultOpen>
-                      <SelectTrigger className="w-[220px]">
-                        <SelectValue placeholder="Select a Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {categories.map((category, index) => (
-                            <SelectItem key={index} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <ScrollArea className="h-[76vh] rounded-md border p-4 mt-6">
-                    <Table>
-                      {count ? (
-                        <TableCaption className="text-right">
-                          Total Products: {count}
-                        </TableCaption>
-                      ) : null}
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          {headers.map((header, index) => (
-                            <TableHead key={index} className="capitalize">
-                              {header}
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {products?.map((row, index) => (
-                          <>
-                            <TableRow key={index}>
-                              <TableCell>
-                                <Avatar>
-                                  <AvatarImage src={row.thumbnail} />
-                                  <AvatarFallback>P</AvatarFallback>
-                                </Avatar>
-                              </TableCell>
-                              <TableCell>{row.title}</TableCell>
-                              <TableCell>{row.description}</TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                $ {row.price}
-                              </TableCell>
-                              <TableCell>{row.category}</TableCell>
-                              <TableCell>{row.brand}</TableCell>
-                              <TableCell>{row.stock}</TableCell>
-                            </TableRow>
-                          </>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                  <Pagination className="mt-4">
-                    <PaginationContent>
-                      <PaginationItem
-                        onClick={() => fetchProducts(false, true)}
-                        className={`${
-                          skip === 0
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        } `}
-                      >
-                        <PaginationPrevious />
-                      </PaginationItem>
-                      <PaginationItem
-                        onClick={() => fetchProducts(true, true)}
-                        className={`${
-                          skip + rowsPerPage >= count
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        } `}
-                      >
-                        <PaginationNext />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              </>
+              <Table>
+                {count ? (
+                  <TableCaption className="text-right">
+                    Total Products: {count}
+                  </TableCaption>
+                ) : null}
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    {headers.map((header, index) => (
+                      <TableHead key={index} className="capitalize">
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products?.map((row, index) => (
+                    <>
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Avatar>
+                            <AvatarImage src={row.thumbnail} />
+                            <AvatarFallback>P</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell>{row.title}</TableCell>
+                        <TableCell>{row.description}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          $ {row.price}
+                        </TableCell>
+                        <TableCell>{row.category}</TableCell>
+                        <TableCell>{row.brand}</TableCell>
+                        <TableCell>{row.stock}</TableCell>
+                      </TableRow>
+                    </>
+                  ))}
+                </TableBody>
+              </Table>
             )}
-          </>
-        ) : null}
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <Pagination className="mt-4">
+            <PaginationContent>
+              <PaginationItem
+                onClick={() => fetchProducts(false, true, selectedCategory)}
+                className={`${
+                  skip === 0
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                } `}
+              >
+                <PaginationPrevious />
+              </PaginationItem>
+              <PaginationItem
+                onClick={() => fetchProducts(true, true, selectedCategory)}
+                className={`${
+                  skip + rowsPerPage >= count
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                } `}
+              >
+                <PaginationNext />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </div>
     </div>
   );
