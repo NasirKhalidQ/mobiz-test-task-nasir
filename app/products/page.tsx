@@ -37,6 +37,7 @@ export default function Products() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("none");
+  const [query, setQuery] = useState("");
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const rowsPerPage = 20;
@@ -54,11 +55,15 @@ export default function Products() {
   const fetchProducts = async (
     next: boolean,
     skipExists?: boolean,
-    category: string = "none"
+    category: string = "none",
+    q: string = ""
   ) => {
     let url = APIEndpoints.GET_PRODUCTS;
     if (category.length && category !== "none") {
       url = `${APIEndpoints.GET_PRODUCTS}/category/${category}`;
+    }
+    if (q.length && category === "none") {
+      url = `${APIEndpoints.GET_PRODUCTS}/search`;
     }
     setLoading(true);
     const skipRecords = next ? skip + rowsPerPage : skip - rowsPerPage;
@@ -70,6 +75,7 @@ export default function Products() {
         params: {
           skip: sk,
           limit: rowsPerPage,
+          q,
         },
       });
       setProducts(response.data.products);
@@ -107,13 +113,23 @@ export default function Products() {
     fetchProducts(false, false, value);
   };
 
+  const searchProducts = (value: string) => {
+    setSelectedCategory("none");
+    setQuery(value);
+    fetchProducts(false, false, "none", value);
+  };
+
   return (
     <div>
       <Navbar />
       <div className="p-6 bg-white rounded-3xl min-h-[722px] mt-4">
         <div className="rounded-xl mt-4 mx-10">
           <div className="flex gap-4">
-            <Input placeholder="Search here..." className="h-10" />
+            <Input
+              onChange={(e) => searchProducts(e.currentTarget.value)}
+              placeholder="Search here..."
+              className="h-10"
+            />
             <Select onValueChange={(value) => selectCategory(value)}>
               <SelectTrigger className="w-[220px]">
                 <SelectValue placeholder="Select a Category" />
@@ -130,7 +146,7 @@ export default function Products() {
               </SelectContent>
             </Select>
           </div>
-          <ScrollArea className="h-[70vh] rounded-md border p-4 mt-6">
+          <ScrollArea className="h-[68vh] rounded-md border p-4 mt-6">
             {loading ? (
               <div className="flex items-center justify-center h-[70vh] gap-2">
                 <Loader2 className="animate-spin h-8 w-8" />
